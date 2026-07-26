@@ -14,8 +14,9 @@ RUN apt-get update \
 
 WORKDIR /app
 
-COPY requiements.txt ./requiements.txt
-RUN pip install --upgrade pip && pip install -r requiements.txt
+COPY requirements.txt ./requirements.txt
+COPY requiements.txt* ./
+RUN pip install --upgrade pip && pip install -r requirements.txt
 
 COPY backend/package.json ./backend/package.json
 COPY backend/package-lock.json* ./backend/

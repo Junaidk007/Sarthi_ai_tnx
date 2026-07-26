@@ -4,7 +4,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
 const AGENT_MICROSERVICE_URL =
-  process.env.AGENT_MICROSERVICE_URL || "http://localhost:8000/api/agents/run";
+  process.env.AGENT_MICROSERVICE_URL || "http://0.0.0.0:8000/api/agents/run";
 
 /**
  * @desc    Execute multi-agent workflow query & save report

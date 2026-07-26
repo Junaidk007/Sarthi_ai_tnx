@@ -1,5 +1,6 @@
 import { Router } from "express";
 import authRoutes from "./auth.routes.js";
+import workflowRoutes from "./workflow.routes.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 
 const router = Router();
@@ -19,7 +20,10 @@ router.get("/health", (req, res) => {
   );
 });
 
-// Auth API sub-router
+// Auth API routes
 router.use("/auth", authRoutes);
+
+// Workflow API routes
+router.use("/workflow", workflowRoutes);
 
 export default router;

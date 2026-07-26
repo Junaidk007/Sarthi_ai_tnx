@@ -109,11 +109,11 @@ function Landing() {
           </div>
 
           {/* Hero illustration */}
-          <div className="relative mx-auto mt-16 max-w-5xl">
+          {/* <div className="relative mx-auto mt-16 max-w-5xl">
             <div className="relative rounded-3xl border border-border/70 bg-white/80 p-6 shadow-card">
               <NetworkIllustration />
             </div>
-          </div>
+          </div> */}
 
           {/* Stats */}
           <div className="mt-16 grid grid-cols-2 gap-4 sm:grid-cols-4">

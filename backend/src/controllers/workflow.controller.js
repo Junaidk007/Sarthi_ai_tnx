@@ -66,7 +66,7 @@ function executePythonAgents(query) {
 /**
  * @desc    Execute multi-agent workflow query & save report
  * @route   POST /api/v1/workflow/run
- * @access  Private (Protected by verifyJWT)
+ * @access  Public (Guest) or Private (If Authorization token provided)
  */
 export const runAgentWorkflow = asyncHandler(async (req, res) => {
   const { query } = req.body;
@@ -106,9 +106,7 @@ export const runAgentWorkflow = asyncHandler(async (req, res) => {
     }
   }
 
-  // Persist report in MongoDB linked to user
-  const savedReport = await Report.create({
-    user: req.user._id,
+  let responseData = {
     query: query.trim(),
     taskType: agentResponseData.taskType || "research",
     plan: agentResponseData.plan || {},
@@ -116,12 +114,21 @@ export const runAgentWorkflow = asyncHandler(async (req, res) => {
     recommendations: agentResponseData.recommendations || "",
     report: agentResponseData.report || "",
     sources: agentResponseData.sources || [],
-  });
+  };
+
+  // Persist report in MongoDB if user is authenticated
+  if (req.user && req.user._id) {
+    const savedReport = await Report.create({
+      user: req.user._id,
+      ...responseData
+    });
+    responseData = savedReport;
+  }
 
   return res.status(200).json(
     new ApiResponse(
       200,
-      savedReport,
+      responseData,
       "Multi-agent research workflow completed successfully"
     )
   );

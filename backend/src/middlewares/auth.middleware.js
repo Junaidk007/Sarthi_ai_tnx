@@ -36,3 +36,28 @@ export const verifyJWT = asyncHandler(async (req, res, next) => {
     throw new ApiError(401, "Invalid or expired token.");
   }
 });
+
+export const optionalJWT = asyncHandler(async (req, res, next) => {
+  let token;
+
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith("Bearer ")
+  ) {
+    token = req.headers.authorization.split(" ")[1];
+  }
+
+  if (token) {
+    try {
+      const decoded = verifyToken(token);
+      const user = await User.findById(decoded._id);
+      if (user && user.isActive) {
+        req.user = user;
+      }
+    } catch (error) {
+      // Ignore token verification errors for guest/optional access
+    }
+  }
+
+  next();
+});

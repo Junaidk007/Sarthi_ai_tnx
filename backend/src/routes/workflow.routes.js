@@ -5,16 +5,16 @@ import {
   getReportById,
   deleteReport,
 } from "../controllers/workflow.controller.js";
-import { verifyJWT } from "../middlewares/auth.middleware.js";
+import { verifyJWT, optionalJWT } from "../middlewares/auth.middleware.js";
 
 const router = Router();
 
-// Protect all workflow routes with JWT authorization
-router.use(verifyJWT);
+// Allow public/guest queries via optionalJWT while saving report if user token is provided
+router.post("/run", optionalJWT, runAgentWorkflow);
 
-router.post("/run", runAgentWorkflow);
-router.get("/reports", getUserReports);
-router.get("/reports/:id", getReportById);
-router.delete("/reports/:id", deleteReport);
+// Protected report history management routes
+router.get("/reports", verifyJWT, getUserReports);
+router.get("/reports/:id", verifyJWT, getReportById);
+router.delete("/reports/:id", verifyJWT, deleteReport);
 
 export default router;

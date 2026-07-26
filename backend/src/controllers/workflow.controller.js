@@ -65,13 +65,29 @@ function executePythonAgents(query) {
 
 /**
  * @desc    Execute multi-agent workflow query & save report
- * @route   POST /api/v1/workflow/run
+ * @route   POST /api/v1/workflow/run  or  GET /api/v1/workflow/run?query=...
  * @access  Public (Guest) or Private (If Authorization token provided)
  */
 export const runAgentWorkflow = asyncHandler(async (req, res) => {
-  const { query } = req.body;
+  const query = req.body?.query || req.query?.query;
 
   if (!query || !query.trim()) {
+    if (req.method === "GET") {
+      return res.status(200).json(
+        new ApiResponse(
+          200,
+          {
+            service: "Sarthi AI Workflow Engine API",
+            status: "online",
+            usage: {
+              post: "POST /api/v1/workflow/run with JSON body { 'query': 'your research topic' }",
+              get: "GET /api/v1/workflow/run?query=your+research+topic"
+            }
+          },
+          "Sarthi AI Agent Workflow endpoint ready"
+        )
+      );
+    }
     throw new ApiError(400, "Query string is required");
   }
 

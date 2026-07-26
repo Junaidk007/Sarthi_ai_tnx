@@ -9,8 +9,9 @@ import { verifyJWT, optionalJWT } from "../middlewares/auth.middleware.js";
 
 const router = Router();
 
-// Allow public/guest queries via optionalJWT while saving report if user token is provided
+// Support both POST (JSON body) and GET (query params / health check) for workflow execution
 router.post("/run", optionalJWT, runAgentWorkflow);
+router.get("/run", optionalJWT, runAgentWorkflow);
 
 // Protected report history management routes
 router.get("/reports", verifyJWT, getUserReports);

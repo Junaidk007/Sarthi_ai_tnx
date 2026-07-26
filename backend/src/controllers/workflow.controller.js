@@ -2,9 +2,66 @@ import { Report } from "../models/report.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { spawn } from "child_process";
+import path from "path";
+import { fileURLToPath } from "url";
+import fs from "fs";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const AGENT_MICROSERVICE_URL =
-  process.env.AGENT_MICROSERVICE_URL || "http://0.0.0.0:8000/api/agents/run";
+  process.env.AGENT_MICROSERVICE_URL || "http://127.0.0.1:8000/api/agents/run";
+
+/**
+ * Execute Python multi-agent pipeline directly via child process
+ */
+function executePythonAgents(query) {
+  return new Promise((resolve, reject) => {
+    // Check possible script paths (backend/finalAgents/run_pipeline.py or root finalAgents/run_pipeline.py)
+    let scriptPath = path.resolve(__dirname, "../../finalAgents/run_pipeline.py");
+    if (!fs.existsSync(scriptPath)) {
+      scriptPath = path.resolve(__dirname, "../../../finalAgents/run_pipeline.py");
+    }
+
+    const pythonCmd = process.platform === "win32" ? "python" : "python3";
+    console.log(`[Workflow Controller] Executing Python agent pipeline via child process: ${scriptPath}`);
+
+    const child = spawn(pythonCmd, [scriptPath, JSON.stringify({ query })], {
+      cwd: path.dirname(scriptPath)
+    });
+
+    let stdoutData = "";
+    let stderrData = "";
+
+    child.stdout.on("data", (data) => {
+      stdoutData += data.toString();
+    });
+
+    child.stderr.on("data", (data) => {
+      stderrData += data.toString();
+    });
+
+    child.on("close", (code) => {
+      if (code !== 0) {
+        console.error(`[Workflow Controller] Python process exited with code ${code}:`, stderrData);
+        return reject(new Error(`Python agent script failed with code ${code}: ${stderrData}`));
+      }
+      try {
+        const parsed = JSON.parse(stdoutData.trim());
+        resolve(parsed);
+      } catch (err) {
+        console.error("[Workflow Controller] Failed to parse JSON from Python stdout:", stdoutData);
+        reject(new Error("Invalid JSON output from Python agent process"));
+      }
+    });
+
+    child.on("error", (err) => {
+      console.error("[Workflow Controller] Failed to spawn Python process:", err);
+      reject(err);
+    });
+  });
+}
 
 /**
  * @desc    Execute multi-agent workflow query & save report
@@ -21,7 +78,7 @@ export const runAgentWorkflow = asyncHandler(async (req, res) => {
   let agentResponseData;
 
   try {
-    // Call Python FastAPI agent microservice
+    console.log(`[Workflow Controller] Calling HTTP Agent Microservice at: ${AGENT_MICROSERVICE_URL}`);
     const agentResponse = await fetch(AGENT_MICROSERVICE_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -35,22 +92,18 @@ export const runAgentWorkflow = asyncHandler(async (req, res) => {
     }
 
     agentResponseData = await agentResponse.json();
+    console.log("[Workflow Controller] Received successful response from HTTP Agent microservice.");
   } catch (err) {
-    console.warn("Could not reach Python Agent microservice. Falling back to synthetic agent mode:", err.message);
+    console.warn(`[Workflow Controller] Could not reach HTTP Agent microservice (${AGENT_MICROSERVICE_URL}): ${err.message}`);
+    console.log("[Workflow Controller] Attempting dynamic Python child process execution fallback...");
 
-    // Fallback engine report if FastAPI is currently starting up or offline
-    agentResponseData = {
-      success: true,
-      query: query.trim(),
-      taskType: "research",
-      plan: { task_type: "research", search_topics: [query.trim()], expected_output: "report" },
-      analysis: `Analysis of query: "${query.trim()}" based on synthesized knowledge.\n- Key trends identified in current dataset.\n- Strategic alignment with user objectives.`,
-      recommendations: `1. Conduct deeper domain verification.\n2. Integrate structured real-time metrics.\n3. Deploy automated monitoring agents.`,
-      report: `Executive Summary:\nComprehensive research analysis completed for "${query.trim()}".\n\nKey Insights:\n- High relevance data aggregated across multiple knowledge vectors.\n- Strategic alignment confirmed.\n\nRecommendations:\n- Proceed with multi-phase implementation.\n- Maintain real-time telemetry.\n\nSources:\n- Sarthi Knowledge Engine\n- Tavily Web Search API\n\nConfidence Score:\n94%`,
-      sources: [
-        { title: "Sarthi AI Knowledge Base", url: "https://sarthi.ai/kb", content: "Primary vector document" }
-      ]
-    };
+    try {
+      agentResponseData = await executePythonAgents(query.trim());
+      console.log("[Workflow Controller] Dynamic Python agent pipeline executed successfully.");
+    } catch (pyErr) {
+      console.error("[Workflow Controller] Direct Python execution also failed:", pyErr.message);
+      throw new ApiError(500, `Multi-agent processing failed: ${pyErr.message}`);
+    }
   }
 
   // Persist report in MongoDB linked to user

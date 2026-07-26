@@ -28,7 +28,8 @@ function executePythonAgents(query) {
     console.log(`[Workflow Controller] Executing Python agent pipeline via child process: ${scriptPath}`);
 
     const child = spawn(pythonCmd, [scriptPath, JSON.stringify({ query })], {
-      cwd: path.dirname(scriptPath)
+      cwd: path.dirname(scriptPath),
+      env: { ...process.env }
     });
 
     let stdoutData = "";

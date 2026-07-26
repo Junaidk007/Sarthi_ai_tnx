@@ -1,6 +1,31 @@
 import sys
-import json
+import subprocess
 import os
+import json
+
+# Ensure required Python packages are installed dynamically if missing on host (Render)
+required_packages = {
+    "groq": "groq",
+    "tavily": "tavily-python",
+    "sentence_transformers": "sentence-transformers",
+    "faiss": "faiss-cpu",
+    "bs4": "beautifulsoup4",
+    "requests": "requests",
+    "dotenv": "python-dotenv",
+    "fastapi": "fastapi",
+    "uvicorn": "uvicorn",
+    "pydantic": "pydantic"
+}
+
+for module_name, package_name in required_packages.items():
+    try:
+        __import__(module_name)
+    except ImportError:
+        sys.stderr.write(f"[Python Pipeline] Module '{module_name}' missing. Auto-installing '{package_name}'...\n")
+        try:
+            subprocess.check_call([sys.executable, "-m", "pip", "install", package_name])
+        except Exception as e:
+            sys.stderr.write(f"[Python Pipeline Warning] Failed to auto-install {package_name}: {e}\n")
 
 # Ensure current script directory is in sys.path for relative imports
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -30,9 +55,13 @@ def run_pipeline(user_query: str):
     # 3. Retrieval Agent (FAISS + Embeddings)
     documents = []
     if search_results:
-        retrieval_agent = RetrievalAgent()
-        retrieval_agent.build_knowledge(search_results)
-        documents = retrieval_agent.retrieve(user_query)
+        try:
+            retrieval_agent = RetrievalAgent()
+            retrieval_agent.build_knowledge(search_results)
+            documents = retrieval_agent.retrieve(user_query)
+        except Exception as e:
+            sys.stderr.write(f"[Retrieval Agent Warning]: {e}\n")
+            documents = search_results
     else:
         documents = [{
             "title": "General Knowledge Base",

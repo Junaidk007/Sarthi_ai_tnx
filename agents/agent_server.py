@@ -1,9 +1,12 @@
 import os
 import uvicorn
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
+
+load_dotenv()
 
 from planner_agent import PlannerAgent
 from web_search_agent import WebSearchAgent

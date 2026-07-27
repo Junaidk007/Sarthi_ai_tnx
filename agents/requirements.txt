@@ -3,8 +3,6 @@ uvicorn
 pydantic
 groq
 tavily-python
-faiss-cpu
-sentence-transformers
 python-dotenv
 requests
 beautifulsoup4

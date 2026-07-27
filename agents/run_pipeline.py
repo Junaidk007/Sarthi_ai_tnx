@@ -7,8 +7,6 @@ import json
 required_packages = {
     "groq": "groq",
     "tavily": "tavily-python",
-    "sentence_transformers": "sentence-transformers",
-    "faiss": "faiss-cpu",
     "bs4": "beautifulsoup4",
     "requests": "requests",
     "dotenv": "python-dotenv",

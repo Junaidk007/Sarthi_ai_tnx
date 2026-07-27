@@ -1,5 +1,5 @@
 const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1";
+  import.meta.env.VITE_API_URL || "https://sarthi-ai-tnx-nzf8.onrender.com/api/v1";
 
 export const TOKEN_STORAGE_KEY = "sarthi_token";
 export const USER_STORAGE_KEY = "sarthi_user";
